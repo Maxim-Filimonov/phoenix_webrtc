@@ -13,7 +13,7 @@ const disconnectButton = document.getElementById("disconnect");
 
 const remoteVideo = document.getElementById("remote-stream");
 const localVideo = document.getElementById("local-stream");
-// Media S
+// Media Stream
 const remoteStream = new MediaStream();
 
 setVideoStream(remoteVideo, remoteStream);
@@ -37,7 +37,6 @@ function log() {
 function setVideoStream(videoElement, stream) {
   videoElement.srcObject = stream;
 }
-
 function unsetVideoStream(videoElement) {
   if (videoElement.srcObject) {
     // stop tracks before disconnecting
@@ -46,7 +45,6 @@ function unsetVideoStream(videoElement) {
   videoElement.removeAttribute("src");
   videoElement.removeAttribute("srcObject");
 }
-
 async function connect() {
   connectButton.disabled = true;
   disconnectButton.disabled = false;
@@ -63,7 +61,6 @@ async function connect() {
     console.error(error);
   }
 }
-
 function disconnect() {
   connectButton.disabled = false;
   disconnectButton.disabled = true;
