@@ -57,10 +57,12 @@ async function connect() {
     });
 
     setVideoStream(localVideo, localStream);
+    peerConnection = createPeerConnection(localStream);
   } catch (error) {
     console.error(error);
   }
 }
+
 function disconnect() {
   connectButton.disabled = false;
   disconnectButton.disabled = true;
@@ -70,4 +72,45 @@ function disconnect() {
   remoteStream = new MediaStream();
 
   setVideoStream(remoteVideo, remoteStream);
+  peerConnection.close();
+  peerConnection.ontrack = null;
+  peerConnection.onicecandidate = null;
+  peerConnection = null;
+}
+
+function createPeerConnection(stream) {
+  const pc = new RTCPeerConnection({
+    iceServers: [
+      {
+        urls: "stun:stun.stunprotocol.org",
+      },
+    ],
+  });
+  pc.ontrack = handleOnTrack;
+  pc.onicecandidate = handleOnIceCandidate;
+  stream.getTracks().forEach((track) => pc.addTrack(track));
+  return pc;
+}
+
+async function call() {
+  let offer = peerConnection.createOffer();
+  peerConnection.setLocalDescription(offer);
+  pushPeerMessage("video-offer", offer);
+}
+
+function pushPeerMessage(type, content) {
+  channel.push("peer-message", {
+    body: JSON.stringify({
+      type,
+      content,
+    }),
+  });
+}
+
+function handleOnTrack(event) {
+  log(event);
+}
+
+function handleOnIceCandidate(event) {
+  log(event);
 }
