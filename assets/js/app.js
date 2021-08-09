@@ -93,7 +93,7 @@ function createPeerConnection(stream) {
 }
 
 async function call() {
-  let offer = peerConnection.createOffer();
+  let offer = await peerConnection.createOffer();
   peerConnection.setLocalDescription(offer);
   pushPeerMessage("video-offer", offer);
 }
@@ -109,8 +109,51 @@ function pushPeerMessage(type, content) {
 
 function handleOnTrack(event) {
   log(event);
+  remoteStream.addTrack(event.track);
 }
 
 function handleOnIceCandidate(event) {
-  log(event);
+  if (!!event.candidate) {
+    pushPeerMessage("ice-candidate", event.candidate);
+  }
+}
+
+channel.on("peer-message", (payload) => {
+  const message = JSON.parse(payload.body);
+  switch (message.type) {
+    case "video-offer":
+      log("offered: ", message.content);
+      answerCall(message.content);
+      break;
+    case "video-answer":
+      log("answered: ", message.content);
+      receiveRemote(message.content);
+      break;
+    case "ice-candidate":
+      log("candidate: ", message.content);
+      let candidate = new RTCIceCandidate(message.content);
+      peerConnection.addIceCandidate(candidate).catch(reportError);
+      break;
+    case "disconnect":
+      disconnect();
+      break;
+    default:
+      reportError("unhandled message type")(message.type);
+  }
+});
+
+function receiveRemote(offer) {
+  let remoteDescription = new RTCSessionDescription(offer);
+  console.log(offer);
+  peerConnection.setRemoteDescription(remoteDescription);
+}
+
+async function answerCall(offer) {
+  receiveRemote(offer);
+  let answer = await peerConnection.createAnswer();
+  peerConnection
+    .setLocalDescription(answer)
+    .then(() =>
+      pushPeerMessage("video-answer", peerConnection.localDescription)
+    );
 }
